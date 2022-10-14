@@ -48,7 +48,7 @@ public class WebLayerTest {
     private UserValidator userValidator;
 
     @Test
-    @WithUserDetails(value = "admin@a.b")
+    @WithUserDetails(value = "admin@a.ru")
     public void shouldReturnUsersList() throws Exception {
         when(userService.listAll()).thenReturn(userList());  // задачи для сервисом
         doNothing().when(userValidator).validate(Object.class, Errors.class.newInstance()); // задачи для сервисом
@@ -60,8 +60,8 @@ public class WebLayerTest {
     private List<User> userList() {
         Role role1 = new Role("USER");
         Role role2 = new Role("ADMIN");
-        User user = new User("user@a.b", "user");
-        User admin = new User("admin@a.b", "admin");
+        User user = new User("user@a.ru", "user");
+        User admin = new User("admin@a.ru", "admin");
         user.setRoles(new LinkedHashSet<Role>(Arrays.asList(role1)));
         admin.setRoles(new LinkedHashSet<Role>(Arrays.asList(role1, role2)));
 

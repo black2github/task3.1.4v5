@@ -3,7 +3,6 @@ package ru.kata.spring.boot_security.demo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,28 +10,25 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.context.WebApplicationContext;
 import ru.kata.spring.boot_security.demo.controller.RestApiController;
+import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static ru.kata.spring.boot_security.demo.configs.AppURLs.API_USERS;
@@ -41,178 +37,143 @@ import static ru.kata.spring.boot_security.demo.configs.AppURLs.API_USERS;
 @AutoConfigureMockMvc
 //@ExtendWith(SpringExtension.class)
 class SpringBootSecurityDemoApplicationTests {
-	private static final Logger log = LoggerFactory.getLogger(SpringBootSecurityDemoApplicationTests.class);
+    private static final Logger log = LoggerFactory.getLogger(SpringBootSecurityDemoApplicationTests.class);
 
-	@Autowired
-	MockMvc mvc;
+    @Autowired
+    MockMvc mvc;
 
-	@Autowired
-	private TestRestTemplate restTemplate;
+    @Autowired
+    private TestRestTemplate restTemplate;
 
-	@Autowired
-	RestApiController restApiController;
+    @Autowired
+    RestApiController restApiController;
 
-	@LocalServerPort
-	private int port;
+    @LocalServerPort
+    private int port;
 
-	ObjectMapper mapper = new ObjectMapper();
-	private static Random r = new Random();
+    ObjectMapper mapper = new ObjectMapper();
+    private static Random r = new Random();
 
-	// @BeforeEach
-	// void setup(WebApplicationContext wac) {
-	// 	this.mvc = MockMvcBuilders.webAppContextSetup(wac).build();
-	// }
+    // @BeforeEach
+    // void setup(WebApplicationContext wac) {
+    // 	this.mvc = MockMvcBuilders.webAppContextSetup(wac).build();
+    // }
 
-	// @Test
-	@BeforeEach
-	void contextLoads() {
+    // @Test
+    @BeforeEach
+    void contextLoads() {
 
-	}
+    }
 
-	// @BeforeEach
-	// public void setup() {
-	// 	WebApplicationContext context =
-	//
-	// 	mvc = MockMvcBuilders
-	// 			.webAppContextSetup(context)
-	// 			.apply(springSecurity())
-	// 			.build();
-	// }
+    //
+    // Test Anonymous Users
+    //
+    @Test
+    @WithAnonymousUser
+    public void whenAnonymousAccessLogin_thenOk() throws Exception {
+        mvc.perform(get("/login"))
+                .andExpect(status().isOk());
+    }
 
-	//
-	// Test Anonymous Users
-	//
-	@Test
-	@WithAnonymousUser
-	public void whenAnonymousAccessLogin_thenOk() throws Exception {
-		mvc.perform(get("/login"))
-				.andExpect(status().isOk());
-	}
+    @Test
+    @WithAnonymousUser
+    public void whenAnonymousAccessRoot_thenOk() throws Exception {
+        mvc.perform(get("/"))
+                .andExpect(status().isOk());
+    }
 
-	@Test
-	@WithAnonymousUser
-	public void whenAnonymousAccessRoot_thenOk() throws Exception {
-		mvc.perform(get("/"))
-				.andExpect(status().isOk());
-	}
+    @Test
+    @WithUserDetails(value = "user@a.ru")
+    public void whenUserAccessAdminSecuredEndpoint_thenIsForbidden() throws Exception {
+        mvc.perform(get("/admin"))
+                .andExpect(status().isForbidden());
+    }
 
-	@Test
-	@WithAnonymousUser
-	public void whenAnonymousAccessRestrictedEndpoint_thenIsUnauthorized() throws Exception {
-		mvc.perform(get("/user"))
-				.andExpect(status().is3xxRedirection());
-	}
+    @Test
+    @WithUserDetails(value = "admin@a.ru")
+    public void whenAdminAccessAdminSecuredEndpoint_thenIsAllowed() throws Exception {
+        mvc.perform(get("/admin"))
+                .andExpect(status().isOk());
+    }
 
-	//
-	// Test Admin Role
-	//
-	// @Test
-	// @WithUserDetails(value = "user@a.b")
-	// public void whenUserAccessUserSecuredEndpoint_thenOk() throws Exception {
-	// 	mvc.perform(get("/user"))
-	// 			.andExpect(status().isOk());
-	// }
+    @Test
+    @WithUserDetails(value = "admin@a.ru")
+    public void getUserList() throws Exception {
+        MvcResult result = mvc.perform(get(API_USERS))
+                .andExpect(status().isOk()).andExpect(content().contentType("application/json"))
+                .andDo(print()).andReturn();
+        User[] users = mapper.readValue(result.getResponse().getContentAsString(), User[].class);
+        assertThat(users.length > 1);
+    }
 
-	@Test
-	@WithUserDetails(value = "user@a.b")
-	public void whenUserAccessAdminSecuredEndpoint_thenIsForbidden() throws Exception {
-		mvc.perform(get("/admin"))
-				.andExpect(status().isForbidden());
-	}
+    @Test
+    @WithUserDetails(value = "admin@a.ru")
+    public void getUser() throws Exception {
+        User u1 = new User("user@a.ru", "user");
 
-	@Test
-	@WithUserDetails(value = "admin@a.b")
-	public void whenAdminAccessAdminSecuredEndpoint_thenIsAllowed() throws Exception {
-		mvc.perform(get("/admin"))
-				.andExpect(status().isOk());
-	}
+        MvcResult result = mvc.perform(get(API_USERS + "/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andReturn();
+        User user = mapper.readValue(result.getResponse().getContentAsString(), User.class);
+        assertThat(user.equals(u1));
+    }
 
-	@Test
-	@WithUserDetails(value = "admin@a.b")
-	// @WithUserDetails(value = "user@a.b")
-	public void getUserList() throws Exception {
-		User u1 = new User("user@a.b", "user");
-		User u2 = new User("admin@a.b", "admin");
-		List<User> users = Arrays.asList(u1, u2);
+    @Test
+    @WithUserDetails(value = "admin@a.ru")
+    public void deleteUserById() throws Exception {
+        // создать дрозофилу
+        User user = new User("user" + r.nextInt(1000) + "@a.ru", "user");
+        String jsonUser = mapper.writeValueAsString(user);
+        MvcResult result =
+                mvc.perform(post(API_USERS).contentType(MediaType.APPLICATION_JSON).content(jsonUser))
+                        .andExpect(status().is(HttpStatus.CREATED.value()))
+                        .andReturn();
+        user = mapper.readValue(result.getResponse().getContentAsString(), User.class);
 
-		mvc.perform(get(API_USERS))
-				.andExpect(status().isOk()).andExpect(content().contentType("application/json"));
+        // удалить
+        mvc.perform(delete(API_USERS + "/" + user.getId()))
+                .andExpect(status().isOk());
 
-		// MvcResult result = mvc.perform(get(API_USERS + "/1"))
-		// 		.andExpect(status().isOk())
-		// 				// .andExpect(content().contentType("application/json")
-		// 						.andReturn();
-		// User user = mapper.readValue(result.getResponse().getContentAsString(), User.class);
-		// assertThat(user.getEmail().equals(u1.getEmail()));
-	}
+        // попытка второго удаления должна провалиться со статусом 410
+        mvc.perform(delete(API_USERS + "/" + user.getId()))
+                .andExpect(status().is(HttpStatus.GONE.value()));
+    }
 
-	@Test
-	@WithUserDetails(value = "admin@a.b")
-	// @WithUserDetails(value = "user@a.b")
-	public void getUser() throws Exception {
-		User u1 = new User("user@a.b", "user");
+    @Test
+    @WithMockUser(username = "admin@a.ru", roles = {"USER", "ADMIN"})
+    public void updateUserById() throws Exception {
+        User user1 = new User("user" + r.nextInt(1000) + "@a.com", "user");
 
-		MvcResult result = mvc.perform(get(API_USERS + "/1"))
-				.andExpect(status().isOk())
-				// .andExpect(content().contentType("application/json")
-				.andReturn();
-		User user = mapper.readValue(result.getResponse().getContentAsString(), User.class);
-		assertThat(user.equals(u1));
-	}
+        // сначала создать
+        String jsonUser = mapper.writeValueAsString(user1);
+        MvcResult result =
+                mvc.perform(post(API_USERS).contentType(MediaType.APPLICATION_JSON).content(jsonUser))
+                        .andExpect(status().is(HttpStatus.CREATED.value()))
+                        .andExpect(content().contentType("application/json"))
+                        .andReturn();
+        user1 = mapper.readValue(result.getResponse().getContentAsString(), User.class);
 
-	@Test
-	@WithUserDetails(value = "admin@a.b")
-	// @WithUserDetails(value = "user@a.b")
-	public void deleteUserById() throws Exception {
-		User u1 = new User("user@a.b", "user");
+        // обновить
+        user1.getRoles().add(new Role("USER"));
+        user1.setFirstName("bla-bla");
+        String url = API_USERS + "/" + user1.getId();
+        result = mvc.perform(patch(url).contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(user1)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andReturn();
+        User user2 = mapper.readValue(result.getResponse().getContentAsString(), User.class);
+        assertThat(user2.equals(user1));
 
-		mvc.perform(delete(API_USERS + "/1"))
-				.andExpect(status().isOk());
+        // то же проверить и через GET
+        result = mvc.perform(get(API_USERS + "/" + user1.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andReturn();
+        user2 = mapper.readValue(result.getResponse().getContentAsString(), User.class);
+        assertThat(user2.equals(user1));
 
-		// попытка второго удаления должна провалиться со статусом 410
-		mvc.perform(delete(API_USERS + "/1"))
-				.andExpect(status().is(HttpStatus.GONE.value()));
-	}
-
-	@Test
-	// @WithMockUser("admin")
-	@WithMockUser(username="admin@a.b", roles={"USER","ADMIN"})
-	//@WithUserDetails(value = "admin@a.b")
-	// @WithUserDetails(value = "user@a.b")
-	public void updateUserById() throws Exception {
-
-		User u1 = new User("user@a.b" + r.nextInt(1000), "user");
-		u1.setId(1l);
-
-		mvc.perform(patch(API_USERS + "/" + u1.getId(), u1))
-				.andExpect(status().isOk());
-
-		MvcResult result = mvc.perform(get(API_USERS + "/" + u1.getId()))
-				.andExpect(status().isOk())
-				.andReturn();
-		User user = mapper.readValue(result.getResponse().getContentAsString(), User.class);
-		assertThat(user.equals(u1));
-	}
-
-	private User[] getRestUserList() throws URISyntaxException {
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		// URI uri = new URI("http://localhost:8080/rest");
-		// RequestEntity<String> getReqEnt = new RequestEntity<>(null, headers, HttpMethod.GET, uri);
-		// ResponseEntity<User[]> getRespEnt = restTemplate.exchange(getReqEnt, User[].class);
-		// return getRespEnt.getBody();
-		return null;
-	}
-
-	// @Test
-	// public void contextLoads() throws Exception {
-	// 	assertThat(controller).isNotNull();
-	// }
-	//
-	// @Test
-	// public void greetingShouldReturnDefaultMessage() throws Exception {
-	// 	assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/rest",
-	// 			User[].class)).contains(..."Hello, World");
-	// }
+        // clean
+        mvc.perform(delete(API_USERS + "/" + user1.getId()));
+    }
 }

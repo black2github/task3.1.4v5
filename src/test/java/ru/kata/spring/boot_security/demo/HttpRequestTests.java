@@ -2,14 +2,23 @@ package ru.kata.spring.boot_security.demo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import ru.kata.spring.boot_security.demo.model.Role;
@@ -36,12 +45,13 @@ public class HttpRequestTests {
     // TestRestTemplate provides a constructor with which we can create a template with specified
     // credentials for basic authentication.
     @Autowired
+    // private TestRestTemplate restTemplate;
     private TestRestTemplate restTemplate;
 
     private static Random r = new Random();
 
     private String cookie = null;
-    private String username = "admin@a.b";
+    private String username = "admin@a.ru";
     private String password = "admin";
     // ставь здесь то, что требуется - "http://localhost:" + port + "/login"
     private String loginUrlPrefix = "http://localhost:";
@@ -72,19 +82,6 @@ public class HttpRequestTests {
             log.debug("setCookie: -> .");
         }
     }
-
-    // private String getCookieForUser(String username, String password, String loginUrl) {
-    //     // так отправляются данные формы
-    //     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-    //     form.set("username", username);
-    //     form.set("password", password);
-    //     ResponseEntity<String> loginResponse = restTemplate.postForEntity(
-    //             loginUrl,
-    //             new HttpEntity<>(form, new HttpHeaders()),
-    //             String.class);
-    //     String cookie = loginResponse.getHeaders().get("Set-Cookie").get(0);
-    //     return null;
-    // }
 
     @AfterEach
     public void delCookie() {
@@ -128,6 +125,40 @@ public class HttpRequestTests {
         RequestEntity<User> postReqEnt = new RequestEntity<>(user, headers, HttpMethod.POST, new URI(url));
         ResponseEntity<User> postRespEnt = this.restTemplate.exchange(postReqEnt, User.class);
         assertThat(postRespEnt.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        // удалить
+        RequestEntity<String> req = new RequestEntity<>( headers, HttpMethod.DELETE, new URI(url+ "/" + postRespEnt.getBody().getId()));
+        this.restTemplate.exchange(req, String.class);
+        //this.restTemplate.delete(url + "/" + postRespEnt.getBody().getId());
+    }
+
+    @Test
+    public void updateUser() throws Exception {
+
+        String url = "http://localhost:" + port + API_USERS;
+        User user = new User("new_user" + r.nextInt(1000) + "@u.com", "user");
+
+        // создать пользователя
+        RequestEntity<User> reqEnt = new RequestEntity<>(user, headers, HttpMethod.POST, new URI(url));
+        ResponseEntity<User> ansEnt = this.restTemplate.exchange(reqEnt, User.class);
+        assertThat(ansEnt.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        user.setId(ansEnt.getBody().getId());
+
+        // обновить
+        user.setLastName("lastName" + r.nextInt(1000));
+        user.getRoles().add(new Role("USER"));
+        user.getRoles().add(new Role("ADMIN"));
+        reqEnt = new RequestEntity<>(user, headers, HttpMethod.PATCH, new URI(url + "/" + user.getId()));
+        ansEnt = this.restTemplate.exchange(reqEnt, User.class);
+        assertThat(ansEnt.getStatusCode()).isEqualTo(HttpStatus.OK);
+        User user2 = ansEnt.getBody();
+        assertThat(user.equals(user2));
+
+        // удалить
+        RequestEntity<String> req = new RequestEntity<>(headers, HttpMethod.DELETE, new URI(url+ "/" + user.getId()));
+        this.restTemplate.exchange(req, String.class);
+        // this.restTemplate.delete(url + "/" + user.getId());
     }
 
     @Test
@@ -155,36 +186,6 @@ public class HttpRequestTests {
         assertThat(deleteRespEnt.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
-    // похоже из-за того, что просто возвращает страницу авторизации при необходимости.
-    // То есть нужно проверять по содержимому
-    // Здесь рассмотрим случай, когда тестируемый /url защищен, и с первого раза запрос с TestRestTemplate сделать не получится.
-    // В этом случае отправляем два запроса — один для получения заголовка авторизации, а второй уже с целью тестирования.
-    // похоже работает только для стандартной/встроенной страницы авторизации (которая возвращается
-    // DefaultLoginPageGeneratingFilter)
-    // @Test
-    // @WithUserDetails(value = "admin@a.b")
-    public void authorizeSecureRequestWithInternalLoginForm() {
-        // В этом случае отправляем два запроса — один для получения заголовка авторизации/cookei,
-        // а второй уже с целью тестирования метода.
-        String loginUrl = "http://localhost:" + port + "/login";
-        String url = "http://localhost:" + port + "/admin";
-
-        log.debug("URL = " + url);
-        restTemplate = new TestRestTemplate("admin@a.b", "admin",
-                TestRestTemplate.HttpClientOption.ENABLE_COOKIES);
-
-        // прохождение логина и скрытое получение cokies - не работает, не смотря на описание
-        // https://www.baeldung.com/spring-boot-testresttemplate
-        // похоже, работает только в случае стандартной/встроенной в SpringSecurity формы, а у нас - кастомная
-        // ResponseEntity<String> response = restTemplate.getForEntity(loginUrl, String.class);
-        ResponseEntity<String> response = restTemplate.getForEntity(loginUrl, String.class); // прохождение логина и скрытое получение cokies
-        // другой вариант, когда не создаем сами TestRestTemplate
-        // ResponseEntity<String> response = restTemplate.withBasicAuth("admin@a.b", "admin").getForEntity(url, String.class);
-        Assertions.assertEquals(response.getStatusCode(), HttpStatus.OK);
-        log.debug("authorizeSecureRequestWithInternalLoginForm:" + response.getBody().toString());
-        Assertions.assertTrue(response.getBody().indexOf("Sign in") == -1); // 'Sign in' найден
-    }
-
     @Test
     public void authorizeSecureRequestWithCustomLoginForm() {
         String url = "http://localhost:" + port + "/admin";
@@ -194,17 +195,6 @@ public class HttpRequestTests {
         //log.trace("authorizeSecureRequestWithCustomLoginForm:" + response.getBody().toString());
         Assertions.assertTrue(response.getBody().indexOf("Sign in") == -1); // 'Sign in' не найден
     }
-
-    // @Test
-    // public void createUser2() throws URISyntaxException {
-    //     String url = "http://localhost:" + port + API_USERS;
-    //
-    //     User user = new User("user@b.c", "user");
-    //     RequestEntity<User> postReqEnt = new RequestEntity<>(user, headers, HttpMethod.POST, new URI(url));
-    //     ResponseEntity<User> postRespEnt = this.restTemplate.exchange(postReqEnt, User.class);
-    //     assertThat(postRespEnt.getStatusCode()).isEqualTo(HttpStatus.OK);
-    //     assertThat(postRespEnt.getBody()).isEqualTo(user);
-    // }
 
     @Test
     public void getUserList() {
@@ -217,8 +207,8 @@ public class HttpRequestTests {
     private List<User> userList() {
         Role role1 = new Role("USER");
         Role role2 = new Role("ADMIN");
-        User user = new User("user@a.b", "user");
-        User admin = new User("admin@a.b", "admin");
+        User user = new User("user@a.ru", "user");
+        User admin = new User("admin@a.ru", "admin");
         user.setRoles(new LinkedHashSet<Role>(Arrays.asList(role1)));
         admin.setRoles(new LinkedHashSet<Role>(Arrays.asList(role1, role2)));
 

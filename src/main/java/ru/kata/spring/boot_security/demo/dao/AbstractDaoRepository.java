@@ -45,10 +45,10 @@ public abstract class AbstractDaoRepository<T, ID> implements DaoRepository<T, I
     @Override
     public Optional<T> findById(ID id) {
         log.debug("findById: <- " + id);
-        EntityGraph entityGraph = getFindEntityGraph();
+        // EntityGraph entityGraph = getFindEntityGraph();
         String query = String.format("select o from %s o %s where o.id = :id", getEntityName(), getJoinFetchInject());
         log.trace(String.format("findById: executing query = '%s' with :id='%s'", query, id));
-        List<T> list = (List<T>) em.createQuery(query, getObjectClass())
+        List<T> list = em.createQuery(query, getObjectClass())
                 .setParameter("id", id)
                 //.setHint("javax.persistence.fetchgraph", entityGraph)
                 .getResultList();
@@ -91,7 +91,7 @@ public abstract class AbstractDaoRepository<T, ID> implements DaoRepository<T, I
     @Override
     public Optional<T> findByName(String name) {
         log.debug("findByName: <- " + name);
-        EntityGraph entityGraph = getFindEntityGraph();
+        // EntityGraph entityGraph = getFindEntityGraph();
         String query = String.format("select o from %s o %s where o.%s = :name",
                 getEntityName(), getJoinFetchInject(), getNameFieldName());
         List<T> list = em.createQuery(query, getObjectClass())

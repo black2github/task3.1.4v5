@@ -44,7 +44,7 @@ public class SpringBootSecurityDemoApplication {
 		Role role2 = new Role("ADMIN");
 		roleDaoRepository.save(role2);
 
-		User admin = new User("admin@a.b", bCryptPasswordEncoder.encode("admin"));
+		User admin = new User("admin@a.ru", bCryptPasswordEncoder.encode("admin"));
 		admin.setFirstName("adminFirstName");
 		admin.setLastName("adminLastName");
 		admin.setAge(99);
@@ -52,7 +52,7 @@ public class SpringBootSecurityDemoApplication {
 
 		userService.create(admin);
 
-		User user = new User("user@a.b", bCryptPasswordEncoder.encode("user"));
+		User user = new User("user@a.ru", bCryptPasswordEncoder.encode("user"));
 		user.setFirstName("userFirstName");
 		user.setLastName("userLastName");
 		user.setAge(112);

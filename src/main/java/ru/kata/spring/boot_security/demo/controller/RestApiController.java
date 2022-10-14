@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 import ru.kata.spring.boot_security.demo.ApplicationException;
 import ru.kata.spring.boot_security.demo.InvalidFormatApplicationException;
@@ -36,7 +35,6 @@ import java.util.List;
 import static ru.kata.spring.boot_security.demo.configs.AppURLs.API_ADMIN;
 import static ru.kata.spring.boot_security.demo.configs.AppURLs.USERS;
 
-//RestController // = @Controller + @ResponseBody
 @Controller
 @CrossOrigin
 @RequestMapping(API_ADMIN) // "/api/admin"
@@ -85,7 +83,7 @@ public class RestApiController {
         try {
             User user = userService.find(id);
             log.debug("getUserById: -> " + user);
-            return new ResponseEntity<User>(user, HttpStatus.OK);
+            return new ResponseEntity<>(user, HttpStatus.OK);
         } catch (Exception ex) {
             riseError("getUserById", ex);
         }
@@ -107,7 +105,7 @@ public class RestApiController {
             }
             User u = userService.create(user);
             log.trace("createUser: -> " + u);
-            return new ResponseEntity<User>(u, HttpStatus.CREATED);
+            return new ResponseEntity<>(u, HttpStatus.CREATED);
         } catch (Exception e) {
             riseError("createUser", e);
         }
@@ -135,7 +133,7 @@ public class RestApiController {
             user.setId(id);
             User usr = userService.update(user);
             log.debug("updateUserById: -> " + usr);
-            return new ResponseEntity<User>(usr, HttpStatus.OK);
+            return new ResponseEntity<>(usr, HttpStatus.OK);
         } catch (Exception ex) {
             riseError("updateUserById", ex);
         }
