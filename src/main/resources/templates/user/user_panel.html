@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+</head>
+<body style="" class="">
+
+<nav class="navbar sticky-top navbar-light bg-dark fs-5">
+    <div class="container-fluid">
+        <div class="col-md-auto px-2 text-white"><strong sec:authentication="name"></strong>
+            <span>with roles: </span>
+            <span
+                    th:text="${#strings.replace(#strings.listJoin(#authentication.principal.authorities, ' '),'ROLE_','')}">
+            </span>
+        </div>
+        <div class="col-md-1">
+            <!-- <a class="navbar-brand text-right text-white-50 fs-6" th:href="@{/logout}">Logout</a> -->
+            <form th:action="@{/logout}" method="POST">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-link text-decoration-none text-white-50">Logout</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="d-flex align-items-start">
+    <div class="col-md-2 gx-0 py-3"> <!-- -->
+        <div class="container-fluid vh-100">
+            <div class="nav flex-column nav-pills me-12" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+
+                <a class="nav-link active" id="v-pills-profile-tab" data-bs-toggle="pill" href="#v-pills-profile"
+                   role="tab" aria-controls="v-pills-profile" aria-selected="true">User</a>
+            </div>
+        </div>
+    </div> <!-- -->
+    <div class="col-md-10"> <!-- -->
+        <div class="container-fluid vh-100 g-0"> <!-- установка высоты области просмотра -->
+            <div class="tab-content bg-light px-3 py-4" id="v-pills-tabContent">
+
+                <div class="tab-pane fade active show vh-100" id="v-pills-profile" role="tabpanel"
+                     aria-labelledby="v-pills-profile-tab">
+                    <p class="h2">User information-page</p>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>About user</h5>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title"></h5>
+                            <table class="table table-borderless table-white table-striped">
+                                <thead class="border-top">
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">First Name</th>
+                                    <th scope="col">Last Name</th>
+                                    <th scope="col">Age</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Role</th>
+
+                                </tr>
+                                </thead>
+
+                                <tbody>
+
+                                <tr class="table-white table-striped" th:each="user : ${users}">
+
+                                    <div th:if="${#strings.equals(#authentication.name,user.getEmail())}">
+                                        <td class="align-middle" th:text="${user.getId()}">id</td>
+                                        <td class="align-middle" th:text="${user.getFirstName()}">first</td>
+                                        <td class="align-middle" th:text="${user.getLastName()}">last</td>
+                                        <td class="align-middle" th:text="${user.getAge()}">age</td>
+                                        <td class="align-middle" th:text="${user.getEmail()}">email</td>
+                                        <td class="align-middle"
+                                            th:text="${#strings.listJoin(user.getRoleNames(), ' ')}">roles
+                                        </td>
+                                    </div>
+                                </tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div> <!--  -->
+    </div> <!-- -->
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+</body>
+</html>

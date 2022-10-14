@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<script src="scripts/admin_panel.js"></script>
+<script type="text/javascript">
+<!-- <script>  -->
+    // "use strict";
+
+    (async () => {
+        // let url = 'https://api.github.com/repos/javascript-tutorial/en.javascript.info/commits';
+        let url = 'http://localhost:8080/api/admin';
+        // let url = 'https://686e1246-51a6-4d86-8d81-a5c6cf50c0dc.mock.pstmn.io/show';
+        let response = await fetch(url);
+        alert("1");
+        let commits = await response.json();
+        alert("2");
+        alert(commits);
+        console.log(commits);
+    })()
+</script>
+</html>

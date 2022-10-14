@@ -1,0 +1,37 @@
+{
+  "id": null,
+  "firstName": null,
+  "lastName": null,
+  "email": "firstName1",
+  "password": "secondName2",
+  "age": 1,
+  "roles": [
+    {
+      "id": 1,
+      "name": "USER",
+      "authority": "USER"
+    },
+    {
+      "id": null,
+      "name": "ADMIN",
+      "authority": "ADMIN"
+    }
+  ],
+  "enabled": true,
+  "username": "firstName1",
+  "roleNames": [
+    "USER",
+    "ADMIN"
+  ],
+  "accountNonLocked": true,
+  "authorities": [
+    {
+      "authority": "ROLE_USER"
+    },
+    {
+      "authority": "ROLE_ADMIN"
+    }
+  ],
+  "accountNonExpired": true,
+  "credentialsNonExpired": true
+}
