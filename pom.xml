@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>ru.kata</groupId>
 	<artifactId>spring-boot_security-task3.1.4</artifactId>
-	<version>v5</version>
+	<version>v5.1</version>
 	<name>spring-boot_security-task3.1.4</name>
 	<description>spring-boot_security-task3.1.4</description>
 	<properties>
@@ -75,6 +75,13 @@
 			<artifactId>commons-validator</artifactId>
 			<version>1.4.1</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient -->
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.13</version>
+		</dependency>
+
     </dependencies>
 
 	<build>
